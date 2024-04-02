@@ -3,6 +3,7 @@ package controller
 import (
 	"backend/model"
 	"backend/pkg"
+
 	// "log"
 	"net/http"
 
@@ -114,7 +115,7 @@ func Login(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"code":    200,
 		"message": "登陆成功！",
-		"token":     jwt,
+		"token":   jwt,
 	})
 }
 
@@ -134,12 +135,72 @@ func GetUserType(userID string) (string, error) {
 	return userType, nil
 }
 
+// 获取所有用户
+func GetAllUsers(c *gin.Context) {
+	allUsers, err := pkg.GetAllUserNames()
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code":    500,
+			"message": "获取失败:" + err.Error(),
+		})
+	}
+	c.JSON(200, gin.H{
+		"code": 200,
+		// "message": "成功！",
+		"users": allUsers,
+	})
+}
+
+// func GetAllUserInfo(c *gin.Context) {
+// 	users, err := GetAllUsers()
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{
+// 			"code":    http.StatusInternalServerError,
+// 			"message": "failed to get all users: " + err.Error(),
+// 		})
+// 		return
+// 	}
+
+// 	var userInfos []gin.H
+// 	for _, user := range users {
+// 		userType, err := GetUserType(user.ID)
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{
+// 				"code":    http.StatusInternalServerError,
+// 				"message": "failed to get user type for user " + user.ID + ": " + err.Error(),
+// 			})
+// 			return
+// 		}
+
+// 		username, err := pkg.GetUsername(user.ID)
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{
+// 				"code":    http.StatusInternalServerError,
+// 				"message": "failed to get username for user " + user.ID + ": " + err.Error(),
+// 			})
+// 			return
+// 		}
+
+// 		userInfo := gin.H{
+// 			"userType": userType,
+// 			"userName": username,
+// 		}
+// 		userInfos = append(userInfos, userInfo)
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"code":      http.StatusOK,
+// 		"message":   "get all users information success",
+// 		"userInfos": userInfos,
+// 	})
+// }
+
 // 获取用户信息
 func GetInfo(c *gin.Context) {
 	userID, exist := c.Get("userID")
 	if !exist {
 		c.JSON(200, gin.H{
-			"code":     200,
+			"code":    200,
 			"message": "get user type failed",
 		})
 	}
@@ -147,7 +208,7 @@ func GetInfo(c *gin.Context) {
 	userType, err := GetUserType(userID.(string))
 	if err != nil {
 		c.JSON(200, gin.H{
-			"code":     200,
+			"code":    200,
 			"message": "get user type failed" + err.Error(),
 		})
 	}
@@ -155,7 +216,7 @@ func GetInfo(c *gin.Context) {
 	username, err := pkg.GetUsername(userID.(string))
 	if err != nil {
 		c.JSON(200, gin.H{
-			"code":     200,
+			"code":    200,
 			"message": "get user name failed" + err.Error(),
 		})
 	}

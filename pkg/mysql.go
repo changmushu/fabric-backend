@@ -97,3 +97,40 @@ func GetUsername(userID string) (username string, err error) {
 	}
 	return username, nil
 }
+
+type User struct {
+	UserName string `json:"username"`
+	UserID   string `json:"userid"`
+	UserType string `json:"usertype"`
+}
+
+// 获取全部用户姓名
+func GetAllUserNames() ([]User, error) {
+	var users []User
+	sqlStr := "SELECT username, user_id FROM users"
+	rows, err := db.Query(sqlStr)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.UserName, &user.UserID); err != nil {
+			return nil, err
+		}
+		// 在循环中调用链码查询
+		userType, err := ChaincodeQuery("GetUserType", user.UserID)
+		if err != nil {
+			return nil, err
+		}
+
+		// 将查询到的用户类型添加到用户结构体中
+		user.UserType = userType
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
