@@ -11,14 +11,16 @@ import (
 )
 
 type user struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Usertype string `json:"userType"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Usertype  string `json:"userType"`
+	Telephone string `json:"telephone"`
+	Realname  string `json:"realname"`
+	CardID    string `json:"cardID"`
 }
 
 func Register(c *gin.Context) {
 	// 将用户信息存入mysql数据库
-
 	var userJson user
 	var user model.MysqlUser
 	//将表单数据转为JSON数据
@@ -151,49 +153,39 @@ func GetAllUsers(c *gin.Context) {
 	})
 }
 
-// func GetAllUserInfo(c *gin.Context) {
-// 	users, err := GetAllUsers()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{
-// 			"code":    http.StatusInternalServerError,
-// 			"message": "failed to get all users: " + err.Error(),
-// 		})
-// 		return
-// 	}
+// 更新用户信息
+func UpdateUserInfo(c *gin.Context) {
+	// 将用户信息存入mysql数据库
+	var userJson user
+	var user model.MysqlUser
+	// 将表单数据转为JSON数据
+	if err := c.ShouldBindJSON(&userJson); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	var userInfos []gin.H
-// 	for _, user := range users {
-// 		userType, err := GetUserType(user.ID)
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{
-// 				"code":    http.StatusInternalServerError,
-// 				"message": "failed to get user type for user " + user.ID + ": " + err.Error(),
-// 			})
-// 			return
-// 		}
-
-// 		username, err := pkg.GetUsername(user.ID)
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{
-// 				"code":    http.StatusInternalServerError,
-// 				"message": "failed to get username for user " + user.ID + ": " + err.Error(),
-// 			})
-// 			return
-// 		}
-
-// 		userInfo := gin.H{
-// 			"userType": userType,
-// 			"userName": username,
-// 		}
-// 		userInfos = append(userInfos, userInfo)
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"code":      http.StatusOK,
-// 		"message":   "get all users information success",
-// 		"userInfos": userInfos,
-// 	})
-// }
+	// 赋值
+	var err error
+	user.UserID, err = pkg.GetUserID(userJson.Username)
+	user.Telephone = userJson.Telephone
+	user.Realname = userJson.Realname
+	user.CardID = userJson.CardID
+	err = pkg.UpdateUser(&user)
+	// log.Println(user)
+	if err != nil {
+		// log.Println("Error inserting user into MySQL database:", err)
+		// 返回错误信息给客户端或者记录日志
+		c.JSON(200, gin.H{
+			"code":    500,
+			"message": "更新失败!",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"code":    200,
+		"message": "更新成功！",
+	})
+}
 
 // 获取用户信息
 func GetInfo(c *gin.Context) {

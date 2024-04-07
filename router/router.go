@@ -38,6 +38,7 @@ func SetupRouter() *gin.Engine {
 	r.POST("/logout", con.Logout)
 	//查询所有用户
 	r.POST("/getAllUsers", middleware.JWTAuthMiddleware(), con.GetAllUsers)
+	r.POST("/updateUserInfo", middleware.JWTAuthMiddleware(), con.UpdateUserInfo)
 	//查询用户的类型
 	r.POST("/getInfo", middleware.JWTAuthMiddleware(), con.GetInfo)
 	//农产品上链
