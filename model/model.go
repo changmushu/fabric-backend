@@ -13,4 +13,6 @@ type MysqlUser struct {
 	Telephone string `json:"telephone"`
 	Realname  string `json:"realname"`
 	CardID    string `json:"card_id"`
+	TxID      string `json:"txid"`
+	IsPass    string `json:"isPass"`
 }

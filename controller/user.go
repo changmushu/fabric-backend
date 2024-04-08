@@ -3,6 +3,7 @@ package controller
 import (
 	"backend/model"
 	"backend/pkg"
+	"fmt"
 
 	// "log"
 	"net/http"
@@ -17,6 +18,18 @@ type user struct {
 	Telephone string `json:"telephone"`
 	Realname  string `json:"realname"`
 	CardID    string `json:"cardID"`
+	TxID      string `json:"txid"`
+	IsPass    string `json:"isPass"`
+}
+
+type res struct {
+	Username  string `json:"username"`
+	Usertype  string `json:"userType"`
+	Telephone string `json:"telephone"`
+	Realname  string `json:"realname"`
+	CardID    string `json:"cardID"`
+	TxID      string `json:"txid"`
+	IsPass    string `json:"isPass"`
 }
 
 func Register(c *gin.Context) {
@@ -34,6 +47,9 @@ func Register(c *gin.Context) {
 	user.Username = userJson.Username
 	user.Password = userJson.Password
 	user.RealInfo = pkg.EncryptByMD5(userJson.Username)
+	user.Telephone = "--"
+	user.Realname = "--"
+	user.CardID = "--"
 	err := pkg.InsertUser(&user)
 	// log.Println(user)
 	if err != nil {
@@ -49,6 +65,7 @@ func Register(c *gin.Context) {
 	// userID string, userType string, realInfoHash string
 	// 将post请求的参数封装成一个数组args
 	var args []string
+	var TxIDUser model.MysqlUser
 	args = append(args, user.UserID)
 	args = append(args, userJson.Usertype)
 	args = append(args, user.RealInfo)
@@ -60,6 +77,8 @@ func Register(c *gin.Context) {
 		})
 		return
 	}
+	TxIDUser.TxID = res
+	err = pkg.UpdateTxID(&TxIDUser)
 	c.JSON(200, gin.H{
 		"code":    200,
 		"message": "注册成功！",
@@ -170,6 +189,8 @@ func UpdateUserInfo(c *gin.Context) {
 	user.Telephone = userJson.Telephone
 	user.Realname = userJson.Realname
 	user.CardID = userJson.CardID
+	user.IsPass = userJson.IsPass
+	fmt.Print(user)
 	err = pkg.UpdateUser(&user)
 	// log.Println(user)
 	if err != nil {
@@ -189,6 +210,7 @@ func UpdateUserInfo(c *gin.Context) {
 
 // 获取用户信息
 func GetInfo(c *gin.Context) {
+
 	userID, exist := c.Get("userID")
 	if !exist {
 		c.JSON(200, gin.H{
@@ -205,18 +227,27 @@ func GetInfo(c *gin.Context) {
 		})
 	}
 
-	username, err := pkg.GetUsername(userID.(string))
+	username, telephone, realname, cardID, txID, isPass, err := pkg.GetUsername(userID.(string))
 	if err != nil {
 		c.JSON(200, gin.H{
 			"code":    200,
-			"message": "get user name failed" + err.Error(),
+			"message": "获取信息失败：" + err.Error(),
 		})
 	}
 
+	var res res
+
+	res.Username = username
+	res.Telephone = telephone
+	res.Realname = realname
+	res.CardID = cardID
+	res.TxID = txID
+	res.Usertype = userType
+	res.IsPass = isPass
+
 	c.JSON(200, gin.H{
-		"code":     200,
-		"message":  "get user type success",
-		"userType": userType,
-		"userName": username,
+		"code":    200,
+		"message": "success",
+		"result":  res,
 	})
 }

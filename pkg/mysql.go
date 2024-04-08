@@ -3,6 +3,8 @@ package pkg
 import (
 	"backend/model"
 	"database/sql"
+	// "fmt"
+
 	// "log"
 	"time"
 
@@ -27,7 +29,7 @@ func MysqlInit() (err error) {
 	// 创建数据库与表（如果不存在的话）
 	db.Exec("CREATE DATABASE IF NOT EXISTS " + viper.GetString("mysql.db"))
 	db.Exec("USE " + viper.GetString("mysql.db"))
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (user_id VARCHAR(50) PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(50) NOT NULL, realInfo VARCHAR(100), telephone VARCHAR(50), realname VARCHAR(50), card_id VARCHAR(50))")
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (user_id VARCHAR(50) PRIMARY KEY, username VARCHAR(50) UNIQUE NOT NULL, password VARCHAR(50) NOT NULL, realInfo VARCHAR(100), telephone VARCHAR(50), realname VARCHAR(50), card_id VARCHAR(50), Txid VARCHAR(255), isPass VARCHAR(255))")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -68,9 +70,20 @@ func InsertUser(user *model.MysqlUser) (err error) {
 	return nil
 }
 
+// 保存交易哈希
+func UpdateTxID(user *model.MysqlUser) (err error) {
+	sqlStr := "UPDATE users SET txid = ? WHERE user_id = ?"
+	_, err = db.Exec(sqlStr, user.TxID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 更新用户
 func UpdateUser(user *model.MysqlUser) (err error) {
-	sqlStr := "UPDATE users SET telephone = ?, realname = ?, card_id = ? WHERE user_id = ?"
-	_, err = db.Exec(sqlStr, user.Telephone, user.Realname, user.CardID, user.UserID)
+	sqlStr := "UPDATE users SET telephone = ?, realname = ?, card_id = ?, isPass = ? WHERE user_id = ?"
+	_, err = db.Exec(sqlStr, user.Telephone, user.Realname, user.CardID, user.IsPass, user.UserID)
 	if err != nil {
 		return err
 	}
@@ -101,14 +114,14 @@ func GetUserID(username string) (userID string, err error) {
 	return userID, nil
 }
 
-// 获取用户姓名
-func GetUsername(userID string) (username string, err error) {
-	sqlStr := "select username from users where user_id = ?"
-	err = db.QueryRow(sqlStr, userID).Scan(&username)
+// 获取用户信息
+func GetUsername(userID string) (username string, telephone string, realname string, card_id string, Txid string, isPass string, err error) {
+	sqlStr := "SELECT username, telephone, realname, card_id, Txid, isPass FROM users WHERE user_id = ?"
+	err = db.QueryRow(sqlStr, userID).Scan(&username, &telephone, &realname, &card_id, &Txid, &isPass)
 	if err != nil {
-		return "", err
+		return "", "", "", "", "", "", err
 	}
-	return username, nil
+	return username, telephone, realname, card_id, Txid, isPass, nil
 }
 
 type User struct {
@@ -118,12 +131,14 @@ type User struct {
 	Telephone string `json:"telephone"`
 	Realname  string `json:"realname"`
 	CardID    string `json:"card_id"`
+	TxID      string `json:"Txid"`
+	IsPass    string `json:"isPass"`
 }
 
-// 获取全部用户姓名
+// 获取全部用户信息
 func GetAllUserNames() ([]User, error) {
 	var users []User
-	sqlStr := "SELECT username, user_id, telephone, realname, card_id FROM users"
+	sqlStr := "SELECT username, user_id, telephone, realname, card_id, Txid, isPass FROM users"
 	rows, err := db.Query(sqlStr)
 	if err != nil {
 		return nil, err
@@ -132,7 +147,7 @@ func GetAllUserNames() ([]User, error) {
 
 	for rows.Next() {
 		var user User
-		if err := rows.Scan(&user.UserName, &user.UserID, &user.Telephone, &user.Realname, &user.CardID); err != nil {
+		if err := rows.Scan(&user.UserName, &user.UserID, &user.Telephone, &user.Realname, &user.CardID, &user.TxID, &user.IsPass); err != nil {
 			return nil, err
 		}
 		// 在循环中调用链码查询
